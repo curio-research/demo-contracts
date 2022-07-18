@@ -14,8 +14,6 @@ To run Foundry tests use `yarn forge-test`.
 
 To deploy the contracts locally, first spin up a local network using `npx hardhat node`. Then, deploy using `npx hardhat deploy --network <NETWORK_NAME>`.
 
-To deploy multiple game instances using a sandbox map using `deploy_sandbox.sh`, first do `chmod +x deploy_sandbox.sh` to allow its execution. Then run `./deploy_sandbox.sh <NUMBER_OF_GAMES>`.
-
 To deploy the testing map (hardcoded, not randomly generated), use `npx hardhat deploy --network localhost --fixmap`.
 
 ## About Curio
