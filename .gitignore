@@ -1,0 +1,15 @@
+**/.vscode/
+node_modules
+
+#Hardhat + Foundry files
+cache
+artifacts
+typechain-types/factories
+cache_hardhat
+out
+
+#local dev help
+tasks/maps
+tasks/game.config.json
+
+.env
