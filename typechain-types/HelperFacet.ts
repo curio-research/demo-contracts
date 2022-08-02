@@ -29,12 +29,11 @@ export interface HelperFacetInterface extends utils.Interface {
     "bulkInitializeTiles((uint256,uint256)[])": FunctionFragment;
     "pauseGame()": FunctionFragment;
     "reactivatePlayer(address)": FunctionFragment;
-    "repair((uint256,uint256))": FunctionFragment;
     "resumeGame()": FunctionFragment;
     "spawnTroop((uint256,uint256),address,uint256)": FunctionFragment;
     "storeEncodedColumnBatches(uint256[][])": FunctionFragment;
     "transferBaseOwnership((uint256,uint256),address)": FunctionFragment;
-    "updatePlayerBalance(address)": FunctionFragment;
+    "updatePlayerBalances(address)": FunctionFragment;
   };
 
   encodeFunctionData(
@@ -45,10 +44,6 @@ export interface HelperFacetInterface extends utils.Interface {
   encodeFunctionData(
     functionFragment: "reactivatePlayer",
     values: [string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "repair",
-    values: [PositionStruct]
   ): string;
   encodeFunctionData(
     functionFragment: "resumeGame",
@@ -67,7 +62,7 @@ export interface HelperFacetInterface extends utils.Interface {
     values: [PositionStruct, string]
   ): string;
   encodeFunctionData(
-    functionFragment: "updatePlayerBalance",
+    functionFragment: "updatePlayerBalances",
     values: [string]
   ): string;
 
@@ -80,7 +75,6 @@ export interface HelperFacetInterface extends utils.Interface {
     functionFragment: "reactivatePlayer",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "repair", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "resumeGame", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "spawnTroop", data: BytesLike): Result;
   decodeFunctionResult(
@@ -92,7 +86,7 @@ export interface HelperFacetInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "updatePlayerBalance",
+    functionFragment: "updatePlayerBalances",
     data: BytesLike
   ): Result;
 
@@ -140,11 +134,6 @@ export interface HelperFacet extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    repair(
-      _pos: PositionStruct,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
     resumeGame(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
@@ -167,7 +156,7 @@ export interface HelperFacet extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    updatePlayerBalance(
+    updatePlayerBalances(
       _player: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
@@ -184,11 +173,6 @@ export interface HelperFacet extends BaseContract {
 
   reactivatePlayer(
     _player: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
-  repair(
-    _pos: PositionStruct,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -214,7 +198,7 @@ export interface HelperFacet extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  updatePlayerBalance(
+  updatePlayerBalances(
     _player: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
@@ -228,8 +212,6 @@ export interface HelperFacet extends BaseContract {
     pauseGame(overrides?: CallOverrides): Promise<void>;
 
     reactivatePlayer(_player: string, overrides?: CallOverrides): Promise<void>;
-
-    repair(_pos: PositionStruct, overrides?: CallOverrides): Promise<void>;
 
     resumeGame(overrides?: CallOverrides): Promise<void>;
 
@@ -251,7 +233,7 @@ export interface HelperFacet extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    updatePlayerBalance(
+    updatePlayerBalances(
       _player: string,
       overrides?: CallOverrides
     ): Promise<void>;
@@ -274,11 +256,6 @@ export interface HelperFacet extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    repair(
-      _pos: PositionStruct,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
     resumeGame(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
@@ -301,7 +278,7 @@ export interface HelperFacet extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    updatePlayerBalance(
+    updatePlayerBalances(
       _player: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
@@ -322,11 +299,6 @@ export interface HelperFacet extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    repair(
-      _pos: PositionStruct,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
     resumeGame(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
@@ -349,7 +321,7 @@ export interface HelperFacet extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    updatePlayerBalance(
+    updatePlayerBalances(
       _player: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;

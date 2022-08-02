@@ -46,35 +46,38 @@ export type PositionStructOutput = [BigNumber, BigNumber] & {
   y: BigNumber;
 };
 
-export type TroopStruct = {
+export type ArmyStruct = {
   owner: string;
-  troopTypeId: BigNumberish;
+  troopIds: BigNumberish[];
   lastMoved: BigNumberish;
   lastLargeActionTaken: BigNumberish;
-  lastRepaired: BigNumberish;
-  health: BigNumberish;
   pos: PositionStruct;
-  cargoTroopIds: BigNumberish[];
 };
 
-export type TroopStructOutput = [
+export type ArmyStructOutput = [
   string,
+  BigNumber[],
   BigNumber,
   BigNumber,
-  BigNumber,
-  BigNumber,
-  BigNumber,
-  PositionStructOutput,
-  BigNumber[]
+  PositionStructOutput
 ] & {
   owner: string;
-  troopTypeId: BigNumber;
+  troopIds: BigNumber[];
   lastMoved: BigNumber;
   lastLargeActionTaken: BigNumber;
-  lastRepaired: BigNumber;
-  health: BigNumber;
   pos: PositionStructOutput;
-  cargoTroopIds: BigNumber[];
+};
+
+export type TroopStruct = {
+  armyId: BigNumberish;
+  troopTypeId: BigNumberish;
+  health: BigNumberish;
+};
+
+export type TroopStructOutput = [BigNumber, BigNumber, BigNumber] & {
+  armyId: BigNumber;
+  troopTypeId: BigNumber;
+  health: BigNumber;
 };
 
 export type BaseStruct = {
@@ -84,12 +87,14 @@ export type BaseStruct = {
   defenseFactor: BigNumberish;
   health: BigNumberish;
   goldGenerationPerSecond: BigNumberish;
+  oilGenerationPerSecond: BigNumberish;
   pos: PositionStruct;
 };
 
 export type BaseStructOutput = [
   number,
   string,
+  BigNumber,
   BigNumber,
   BigNumber,
   BigNumber,
@@ -102,27 +107,24 @@ export type BaseStructOutput = [
   defenseFactor: BigNumber;
   health: BigNumber;
   goldGenerationPerSecond: BigNumber;
+  oilGenerationPerSecond: BigNumber;
   pos: PositionStructOutput;
 };
 
 export type TroopTypeStruct = {
   name: BigNumberish;
-  isLandTroop: boolean;
   maxHealth: BigNumberish;
   damagePerHit: BigNumberish;
   attackFactor: BigNumberish;
   defenseFactor: BigNumberish;
-  cargoCapacity: BigNumberish;
   movementCooldown: BigNumberish;
   largeActionCooldown: BigNumberish;
-  cost: BigNumberish;
-  expensePerSecond: BigNumberish;
+  goldPrice: BigNumberish;
+  oilConsumptionPerSecond: BigNumberish;
 };
 
 export type TroopTypeStructOutput = [
   number,
-  boolean,
-  BigNumber,
   BigNumber,
   BigNumber,
   BigNumber,
@@ -133,16 +135,14 @@ export type TroopTypeStructOutput = [
   BigNumber
 ] & {
   name: number;
-  isLandTroop: boolean;
   maxHealth: BigNumber;
   damagePerHit: BigNumber;
   attackFactor: BigNumber;
   defenseFactor: BigNumber;
-  cargoCapacity: BigNumber;
   movementCooldown: BigNumber;
   largeActionCooldown: BigNumber;
-  cost: BigNumber;
-  expensePerSecond: BigNumber;
+  goldPrice: BigNumber;
+  oilConsumptionPerSecond: BigNumber;
 };
 
 export type TileStruct = {
@@ -162,12 +162,14 @@ export type TileStructOutput = [boolean, number, BigNumber, BigNumber] & {
 export type PlayerStruct = {
   initTimestamp: BigNumberish;
   active: boolean;
-  balance: BigNumberish;
+  goldBalance: BigNumberish;
   totalGoldGenerationPerUpdate: BigNumberish;
-  totalTroopExpensePerUpdate: BigNumberish;
+  totalOilGenerationPerUpdate: BigNumberish;
+  totalOilConsumptionPerUpdate: BigNumberish;
   balanceLastUpdated: BigNumberish;
   numOwnedBases: BigNumberish;
   numOwnedTroops: BigNumberish;
+  isDebuffed: boolean;
 };
 
 export type PlayerStructOutput = [
@@ -178,36 +180,42 @@ export type PlayerStructOutput = [
   BigNumber,
   BigNumber,
   BigNumber,
-  BigNumber
+  BigNumber,
+  BigNumber,
+  boolean
 ] & {
   initTimestamp: BigNumber;
   active: boolean;
-  balance: BigNumber;
+  goldBalance: BigNumber;
   totalGoldGenerationPerUpdate: BigNumber;
-  totalTroopExpensePerUpdate: BigNumber;
+  totalOilGenerationPerUpdate: BigNumber;
+  totalOilConsumptionPerUpdate: BigNumber;
   balanceLastUpdated: BigNumber;
   numOwnedBases: BigNumber;
   numOwnedTroops: BigNumber;
+  isDebuffed: boolean;
 };
 
 export type WorldConstantsStruct = {
   admin: string;
   worldWidth: BigNumberish;
   worldHeight: BigNumberish;
-  numPorts: BigNumberish;
-  numCities: BigNumberish;
   combatEfficiency: BigNumberish;
   numInitTerrainTypes: BigNumberish;
   initBatchSize: BigNumberish;
-  initPlayerBalance: BigNumberish;
-  defaultBaseGoldGenerationPerSecond: BigNumberish;
+  initPlayerGoldBalance: BigNumberish;
+  initPlayerOilBalance: BigNumberish;
   maxBaseCountPerPlayer: BigNumberish;
   maxTroopCountPerPlayer: BigNumberish;
   maxPlayerCount: BigNumberish;
+  defaultBaseGoldGenerationPerSecond: BigNumberish;
+  defaultWellOilGenerationPerSecond: BigNumberish;
+  debuffFactor: BigNumberish;
 };
 
 export type WorldConstantsStructOutput = [
   string,
+  BigNumber,
   BigNumber,
   BigNumber,
   BigNumber,
@@ -224,16 +232,17 @@ export type WorldConstantsStructOutput = [
   admin: string;
   worldWidth: BigNumber;
   worldHeight: BigNumber;
-  numPorts: BigNumber;
-  numCities: BigNumber;
   combatEfficiency: BigNumber;
   numInitTerrainTypes: BigNumber;
   initBatchSize: BigNumber;
-  initPlayerBalance: BigNumber;
-  defaultBaseGoldGenerationPerSecond: BigNumber;
+  initPlayerGoldBalance: BigNumber;
+  initPlayerOilBalance: BigNumber;
   maxBaseCountPerPlayer: BigNumber;
   maxTroopCountPerPlayer: BigNumber;
   maxPlayerCount: BigNumber;
+  defaultBaseGoldGenerationPerSecond: BigNumber;
+  defaultWellOilGenerationPerSecond: BigNumber;
+  debuffFactor: BigNumber;
 };
 
 export interface CurioInterface extends utils.Interface {
@@ -247,8 +256,12 @@ export interface CurioInterface extends utils.Interface {
     "deleteTroop(uint256)": FunctionFragment;
     "initializePlayer((uint256,uint256))": FunctionFragment;
     "march(uint256,(uint256,uint256))": FunctionFragment;
+    "moveTroop(uint256,(uint256,uint256))": FunctionFragment;
     "purchaseTroop((uint256,uint256),uint256)": FunctionFragment;
+    "bulkGetAllArmies()": FunctionFragment;
     "bulkGetAllTroops()": FunctionFragment;
+    "getArmy(uint256)": FunctionFragment;
+    "getArmyAt((uint256,uint256))": FunctionFragment;
     "getBase(uint256)": FunctionFragment;
     "getBaseAt((uint256,uint256))": FunctionFragment;
     "getBaseNonce()": FunctionFragment;
@@ -259,43 +272,50 @@ export interface CurioInterface extends utils.Interface {
     "getPlayerCount()": FunctionFragment;
     "getTileAt((uint256,uint256))": FunctionFragment;
     "getTroop(uint256)": FunctionFragment;
-    "getTroopAt((uint256,uint256))": FunctionFragment;
     "getTroopType(uint256)": FunctionFragment;
     "getWorldConstants()": FunctionFragment;
     "isPlayerInitialized(address)": FunctionFragment;
     "bulkInitializeTiles((uint256,uint256)[])": FunctionFragment;
     "pauseGame()": FunctionFragment;
     "reactivatePlayer(address)": FunctionFragment;
-    "repair((uint256,uint256))": FunctionFragment;
     "resumeGame()": FunctionFragment;
     "spawnTroop((uint256,uint256),address,uint256)": FunctionFragment;
     "storeEncodedColumnBatches(uint256[][])": FunctionFragment;
     "transferBaseOwnership((uint256,uint256),address)": FunctionFragment;
-    "updatePlayerBalance(address)": FunctionFragment;
+    "updatePlayerBalances(address)": FunctionFragment;
     "owner()": FunctionFragment;
     "transferOwnership(address)": FunctionFragment;
-    "_canTransportTroop((bool,uint8,uint256,uint256))": FunctionFragment;
+    "_getArmy(uint256)": FunctionFragment;
+    "_getArmyAttackFactor(uint256[])": FunctionFragment;
+    "_getArmyDamagePerHit(uint256[])": FunctionFragment;
+    "_getArmyDefenseFactor(uint256[])": FunctionFragment;
+    "_getArmyHealth(uint256[])": FunctionFragment;
+    "_getArmyInfantryPercentage(uint256[])": FunctionFragment;
+    "_getArmyLargeActionCooldown(uint256[])": FunctionFragment;
+    "_getArmyMovementCooldown(uint256[])": FunctionFragment;
+    "_getArmyOilConsumptionPerSecond(uint256[])": FunctionFragment;
     "_getAttackFactor(uint256)": FunctionFragment;
     "_getBase(uint256)": FunctionFragment;
     "_getBaseHealth(uint256)": FunctionFragment;
     "_getBaseOwner(uint256)": FunctionFragment;
-    "_getCargoCapacity(uint256)": FunctionFragment;
     "_getDamagePerHit(uint256)": FunctionFragment;
+    "_getDebuffedArmyDamagePerHit(uint256[])": FunctionFragment;
     "_getDefenseFactor(uint256)": FunctionFragment;
-    "_getExpensePerSecond(uint256)": FunctionFragment;
     "_getLargeActionCooldown(uint256)": FunctionFragment;
     "_getMaxHealth(uint256)": FunctionFragment;
     "_getMovementCooldown(uint256)": FunctionFragment;
+    "_getOilConsumptionPerSecond(uint256)": FunctionFragment;
     "_getPlayer(address)": FunctionFragment;
-    "_getPlayerBalance(address)": FunctionFragment;
     "_getPlayerCount()": FunctionFragment;
+    "_getPlayerGoldBalance(address)": FunctionFragment;
     "_getTileAt((uint256,uint256))": FunctionFragment;
     "_getTotalGoldGenerationPerUpdate(address)": FunctionFragment;
     "_getTroop(uint256)": FunctionFragment;
-    "_getTroopCost(uint256)": FunctionFragment;
+    "_getTroopGoldPrice(uint256)": FunctionFragment;
+    "_getTroopName(uint256)": FunctionFragment;
     "_hasPort((bool,uint8,uint256,uint256))": FunctionFragment;
     "_inBound((uint256,uint256))": FunctionFragment;
-    "_isLandTroop(uint256)": FunctionFragment;
+    "_isDebuffed(address)": FunctionFragment;
     "_isPlayerActive(address)": FunctionFragment;
     "_isPlayerInitialized(address)": FunctionFragment;
     "_random(uint256,uint256)": FunctionFragment;
@@ -338,12 +358,28 @@ export interface CurioInterface extends utils.Interface {
     values: [BigNumberish, PositionStruct]
   ): string;
   encodeFunctionData(
+    functionFragment: "moveTroop",
+    values: [BigNumberish, PositionStruct]
+  ): string;
+  encodeFunctionData(
     functionFragment: "purchaseTroop",
     values: [PositionStruct, BigNumberish]
   ): string;
   encodeFunctionData(
+    functionFragment: "bulkGetAllArmies",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "bulkGetAllTroops",
     values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getArmy",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getArmyAt",
+    values: [PositionStruct]
   ): string;
   encodeFunctionData(
     functionFragment: "getBase",
@@ -383,10 +419,6 @@ export interface CurioInterface extends utils.Interface {
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "getTroopAt",
-    values: [PositionStruct]
-  ): string;
-  encodeFunctionData(
     functionFragment: "getTroopType",
     values: [BigNumberish]
   ): string;
@@ -408,10 +440,6 @@ export interface CurioInterface extends utils.Interface {
     values: [string]
   ): string;
   encodeFunctionData(
-    functionFragment: "repair",
-    values: [PositionStruct]
-  ): string;
-  encodeFunctionData(
     functionFragment: "resumeGame",
     values?: undefined
   ): string;
@@ -428,7 +456,7 @@ export interface CurioInterface extends utils.Interface {
     values: [PositionStruct, string]
   ): string;
   encodeFunctionData(
-    functionFragment: "updatePlayerBalance",
+    functionFragment: "updatePlayerBalances",
     values: [string]
   ): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
@@ -437,8 +465,40 @@ export interface CurioInterface extends utils.Interface {
     values: [string]
   ): string;
   encodeFunctionData(
-    functionFragment: "_canTransportTroop",
-    values: [TileStruct]
+    functionFragment: "_getArmy",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "_getArmyAttackFactor",
+    values: [BigNumberish[]]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "_getArmyDamagePerHit",
+    values: [BigNumberish[]]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "_getArmyDefenseFactor",
+    values: [BigNumberish[]]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "_getArmyHealth",
+    values: [BigNumberish[]]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "_getArmyInfantryPercentage",
+    values: [BigNumberish[]]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "_getArmyLargeActionCooldown",
+    values: [BigNumberish[]]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "_getArmyMovementCooldown",
+    values: [BigNumberish[]]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "_getArmyOilConsumptionPerSecond",
+    values: [BigNumberish[]]
   ): string;
   encodeFunctionData(
     functionFragment: "_getAttackFactor",
@@ -457,19 +517,15 @@ export interface CurioInterface extends utils.Interface {
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "_getCargoCapacity",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
     functionFragment: "_getDamagePerHit",
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "_getDefenseFactor",
-    values: [BigNumberish]
+    functionFragment: "_getDebuffedArmyDamagePerHit",
+    values: [BigNumberish[]]
   ): string;
   encodeFunctionData(
-    functionFragment: "_getExpensePerSecond",
+    functionFragment: "_getDefenseFactor",
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
@@ -484,14 +540,18 @@ export interface CurioInterface extends utils.Interface {
     functionFragment: "_getMovementCooldown",
     values: [BigNumberish]
   ): string;
-  encodeFunctionData(functionFragment: "_getPlayer", values: [string]): string;
   encodeFunctionData(
-    functionFragment: "_getPlayerBalance",
-    values: [string]
+    functionFragment: "_getOilConsumptionPerSecond",
+    values: [BigNumberish]
   ): string;
+  encodeFunctionData(functionFragment: "_getPlayer", values: [string]): string;
   encodeFunctionData(
     functionFragment: "_getPlayerCount",
     values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "_getPlayerGoldBalance",
+    values: [string]
   ): string;
   encodeFunctionData(
     functionFragment: "_getTileAt",
@@ -506,7 +566,11 @@ export interface CurioInterface extends utils.Interface {
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "_getTroopCost",
+    functionFragment: "_getTroopGoldPrice",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "_getTroopName",
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
@@ -517,10 +581,7 @@ export interface CurioInterface extends utils.Interface {
     functionFragment: "_inBound",
     values: [PositionStruct]
   ): string;
-  encodeFunctionData(
-    functionFragment: "_isLandTroop",
-    values: [BigNumberish]
-  ): string;
+  encodeFunctionData(functionFragment: "_isDebuffed", values: [string]): string;
   encodeFunctionData(
     functionFragment: "_isPlayerActive",
     values: [string]
@@ -573,14 +634,21 @@ export interface CurioInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "march", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "moveTroop", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "purchaseTroop",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "bulkGetAllArmies",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
     functionFragment: "bulkGetAllTroops",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "getArmy", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "getArmyAt", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "getBase", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "getBaseAt", data: BytesLike): Result;
   decodeFunctionResult(
@@ -606,7 +674,6 @@ export interface CurioInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "getTileAt", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "getTroop", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "getTroopAt", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "getTroopType",
     data: BytesLike
@@ -628,7 +695,6 @@ export interface CurioInterface extends utils.Interface {
     functionFragment: "reactivatePlayer",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "repair", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "resumeGame", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "spawnTroop", data: BytesLike): Result;
   decodeFunctionResult(
@@ -640,7 +706,7 @@ export interface CurioInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "updatePlayerBalance",
+    functionFragment: "updatePlayerBalances",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
@@ -648,8 +714,37 @@ export interface CurioInterface extends utils.Interface {
     functionFragment: "transferOwnership",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "_getArmy", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "_canTransportTroop",
+    functionFragment: "_getArmyAttackFactor",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "_getArmyDamagePerHit",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "_getArmyDefenseFactor",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "_getArmyHealth",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "_getArmyInfantryPercentage",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "_getArmyLargeActionCooldown",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "_getArmyMovementCooldown",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "_getArmyOilConsumptionPerSecond",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -666,19 +761,15 @@ export interface CurioInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "_getCargoCapacity",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
     functionFragment: "_getDamagePerHit",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "_getDefenseFactor",
+    functionFragment: "_getDebuffedArmyDamagePerHit",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "_getExpensePerSecond",
+    functionFragment: "_getDefenseFactor",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -693,13 +784,17 @@ export interface CurioInterface extends utils.Interface {
     functionFragment: "_getMovementCooldown",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "_getOilConsumptionPerSecond",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "_getPlayer", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "_getPlayerBalance",
+    functionFragment: "_getPlayerCount",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "_getPlayerCount",
+    functionFragment: "_getPlayerGoldBalance",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "_getTileAt", data: BytesLike): Result;
@@ -709,13 +804,17 @@ export interface CurioInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "_getTroop", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "_getTroopCost",
+    functionFragment: "_getTroopGoldPrice",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "_getTroopName",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "_hasPort", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "_inBound", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "_isLandTroop",
+    functionFragment: "_isDebuffed",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -737,38 +836,32 @@ export interface CurioInterface extends utils.Interface {
   events: {
     "DiamondCut(tuple[],address,bytes)": EventFragment;
     "OwnershipTransferred(address,address)": EventFragment;
-    "AttackedBase(address,uint256,tuple,uint256,tuple)": EventFragment;
-    "AttackedTroop(address,uint256,tuple,uint256,tuple)": EventFragment;
-    "BaseCaptured(address,uint256,uint256)": EventFragment;
-    "Death(address,uint256)": EventFragment;
+    "ArmyDeath(address,uint256)": EventFragment;
+    "AttackedArmy(address,uint256,tuple,tuple[],uint256,tuple,tuple[])": EventFragment;
+    "BaseInfo(address,uint256,tuple)": EventFragment;
     "GamePaused()": EventFragment;
     "GameResumed()": EventFragment;
-    "Moved(address,uint256,uint256,tuple,tuple)": EventFragment;
+    "MovedArmy(address,uint256,tuple,uint256,tuple,tuple,uint256,tuple)": EventFragment;
     "NewPlayer(address,tuple)": EventFragment;
-    "NewTroop(address,uint256,tuple,tuple)": EventFragment;
+    "NewTroop(address,uint256,tuple,uint256,tuple)": EventFragment;
     "PlayerInfo(address,tuple)": EventFragment;
     "PlayerReactivated(address)": EventFragment;
-    "Recovered(address,uint256)": EventFragment;
-    "Repaired(address,uint256,uint256)": EventFragment;
-    "UpdatePlayerBalance(address,uint256)": EventFragment;
+    "TroopDeath(address,uint256)": EventFragment;
   };
 
   getEvent(nameOrSignatureOrTopic: "DiamondCut"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "AttackedBase"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "AttackedTroop"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "BaseCaptured"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "Death"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "ArmyDeath"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "AttackedArmy"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "BaseInfo"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "GamePaused"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "GameResumed"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "Moved"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "MovedArmy"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "NewPlayer"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "NewTroop"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "PlayerInfo"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "PlayerReactivated"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "Recovered"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "Repaired"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "UpdatePlayerBalance"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "TroopDeath"): EventFragment;
 }
 
 export type DiamondCutEvent = TypedEvent<
@@ -786,45 +879,42 @@ export type OwnershipTransferredEvent = TypedEvent<
 export type OwnershipTransferredEventFilter =
   TypedEventFilter<OwnershipTransferredEvent>;
 
-export type AttackedBaseEvent = TypedEvent<
-  [string, BigNumber, TroopStructOutput, BigNumber, BaseStructOutput],
-  {
-    _player: string;
-    _troopId: BigNumber;
-    _troopInfo: TroopStructOutput;
-    _targetBaseId: BigNumber;
-    _targetBaseInfo: BaseStructOutput;
-  }
->;
-
-export type AttackedBaseEventFilter = TypedEventFilter<AttackedBaseEvent>;
-
-export type AttackedTroopEvent = TypedEvent<
-  [string, BigNumber, TroopStructOutput, BigNumber, TroopStructOutput],
-  {
-    _player: string;
-    _troopId: BigNumber;
-    _troopInfo: TroopStructOutput;
-    _targetTroopId: BigNumber;
-    _targetTroopInfo: TroopStructOutput;
-  }
->;
-
-export type AttackedTroopEventFilter = TypedEventFilter<AttackedTroopEvent>;
-
-export type BaseCapturedEvent = TypedEvent<
-  [string, BigNumber, BigNumber],
-  { _player: string; _troopId: BigNumber; _baseId: BigNumber }
->;
-
-export type BaseCapturedEventFilter = TypedEventFilter<BaseCapturedEvent>;
-
-export type DeathEvent = TypedEvent<
+export type ArmyDeathEvent = TypedEvent<
   [string, BigNumber],
-  { _player: string; _troopId: BigNumber }
+  { _player: string; _armyId: BigNumber }
 >;
 
-export type DeathEventFilter = TypedEventFilter<DeathEvent>;
+export type ArmyDeathEventFilter = TypedEventFilter<ArmyDeathEvent>;
+
+export type AttackedArmyEvent = TypedEvent<
+  [
+    string,
+    BigNumber,
+    ArmyStructOutput,
+    TroopStructOutput[],
+    BigNumber,
+    ArmyStructOutput,
+    TroopStructOutput[]
+  ],
+  {
+    _player: string;
+    _armyId: BigNumber;
+    _armyInfo: ArmyStructOutput;
+    _armyTroops: TroopStructOutput[];
+    _targetArmy: BigNumber;
+    _targetArmyInfo: ArmyStructOutput;
+    _targetArmyTroops: TroopStructOutput[];
+  }
+>;
+
+export type AttackedArmyEventFilter = TypedEventFilter<AttackedArmyEvent>;
+
+export type BaseInfoEvent = TypedEvent<
+  [string, BigNumber, BaseStructOutput],
+  { _player: string; _baseId: BigNumber; _Base: BaseStructOutput }
+>;
+
+export type BaseInfoEventFilter = TypedEventFilter<BaseInfoEvent>;
 
 export type GamePausedEvent = TypedEvent<[], {}>;
 
@@ -834,18 +924,30 @@ export type GameResumedEvent = TypedEvent<[], {}>;
 
 export type GameResumedEventFilter = TypedEventFilter<GameResumedEvent>;
 
-export type MovedEvent = TypedEvent<
-  [string, BigNumber, BigNumber, PositionStructOutput, PositionStructOutput],
+export type MovedArmyEvent = TypedEvent<
+  [
+    string,
+    BigNumber,
+    PositionStructOutput,
+    BigNumber,
+    ArmyStructOutput,
+    PositionStructOutput,
+    BigNumber,
+    ArmyStructOutput
+  ],
   {
     _player: string;
-    _troopId: BigNumber;
-    _timestamp: BigNumber;
+    timestamp: BigNumber;
     _startPos: PositionStructOutput;
-    _targetPos: PositionStructOutput;
+    _startTileArmyId: BigNumber;
+    _startTileArmy: ArmyStructOutput;
+    _endPos: PositionStructOutput;
+    _targetTileArmyId: BigNumber;
+    _targetTileArmy: ArmyStructOutput;
   }
 >;
 
-export type MovedEventFilter = TypedEventFilter<MovedEvent>;
+export type MovedArmyEventFilter = TypedEventFilter<MovedArmyEvent>;
 
 export type NewPlayerEvent = TypedEvent<
   [string, PositionStructOutput],
@@ -855,12 +957,13 @@ export type NewPlayerEvent = TypedEvent<
 export type NewPlayerEventFilter = TypedEventFilter<NewPlayerEvent>;
 
 export type NewTroopEvent = TypedEvent<
-  [string, BigNumber, TroopStructOutput, PositionStructOutput],
+  [string, BigNumber, TroopStructOutput, BigNumber, ArmyStructOutput],
   {
     _player: string;
     _troopId: BigNumber;
     _troop: TroopStructOutput;
-    _pos: PositionStructOutput;
+    _armyId: BigNumber;
+    _army: ArmyStructOutput;
   }
 >;
 
@@ -878,27 +981,12 @@ export type PlayerReactivatedEvent = TypedEvent<[string], { _player: string }>;
 export type PlayerReactivatedEventFilter =
   TypedEventFilter<PlayerReactivatedEvent>;
 
-export type RecoveredEvent = TypedEvent<
+export type TroopDeathEvent = TypedEvent<
   [string, BigNumber],
   { _player: string; _troopId: BigNumber }
 >;
 
-export type RecoveredEventFilter = TypedEventFilter<RecoveredEvent>;
-
-export type RepairedEvent = TypedEvent<
-  [string, BigNumber, BigNumber],
-  { _player: string; _troopId: BigNumber; _health: BigNumber }
->;
-
-export type RepairedEventFilter = TypedEventFilter<RepairedEvent>;
-
-export type UpdatePlayerBalanceEvent = TypedEvent<
-  [string, BigNumber],
-  { _player: string; _amount: BigNumber }
->;
-
-export type UpdatePlayerBalanceEventFilter =
-  TypedEventFilter<UpdatePlayerBalanceEvent>;
+export type TroopDeathEventFilter = TypedEventFilter<TroopDeathEvent>;
 
 export interface Curio extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
@@ -968,6 +1056,12 @@ export interface Curio extends BaseContract {
     ): Promise<ContractTransaction>;
 
     march(
+      _armyId: BigNumberish,
+      _targetPos: PositionStruct,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    moveTroop(
       _troopId: BigNumberish,
       _targetPos: PositionStruct,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -979,7 +1073,19 @@ export interface Curio extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    bulkGetAllArmies(overrides?: CallOverrides): Promise<[ArmyStructOutput[]]>;
+
     bulkGetAllTroops(overrides?: CallOverrides): Promise<[TroopStructOutput[]]>;
+
+    getArmy(
+      _armyId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<[ArmyStructOutput]>;
+
+    getArmyAt(
+      _pos: PositionStruct,
+      overrides?: CallOverrides
+    ): Promise<[ArmyStructOutput]>;
 
     getBase(
       _id: BigNumberish,
@@ -1028,11 +1134,6 @@ export interface Curio extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[TroopStructOutput]>;
 
-    getTroopAt(
-      _pos: PositionStruct,
-      overrides?: CallOverrides
-    ): Promise<[TroopStructOutput]>;
-
     getTroopType(
       _troopTypeId: BigNumberish,
       overrides?: CallOverrides
@@ -1061,11 +1162,6 @@ export interface Curio extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    repair(
-      _pos: PositionStruct,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
     resumeGame(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
@@ -1088,7 +1184,7 @@ export interface Curio extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    updatePlayerBalance(
+    updatePlayerBalances(
       _player: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
@@ -1100,10 +1196,50 @@ export interface Curio extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    _canTransportTroop(
-      _tile: TileStruct,
+    _getArmy(
+      _armyId: BigNumberish,
       overrides?: CallOverrides
-    ): Promise<[boolean]>;
+    ): Promise<[ArmyStructOutput]>;
+
+    _getArmyAttackFactor(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
+
+    _getArmyDamagePerHit(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
+
+    _getArmyDefenseFactor(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
+
+    _getArmyHealth(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
+
+    _getArmyInfantryPercentage(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
+
+    _getArmyLargeActionCooldown(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
+
+    _getArmyMovementCooldown(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
+
+    _getArmyOilConsumptionPerSecond(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
 
     _getAttackFactor(
       _troopTypeId: BigNumberish,
@@ -1125,22 +1261,17 @@ export interface Curio extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[string]>;
 
-    _getCargoCapacity(
-      _troopId: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
-
     _getDamagePerHit(
       _troopTypeId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<[BigNumber]>;
 
-    _getDefenseFactor(
-      _troopTypeId: BigNumberish,
+    _getDebuffedArmyDamagePerHit(
+      _armyTroopIds: BigNumberish[],
       overrides?: CallOverrides
     ): Promise<[BigNumber]>;
 
-    _getExpensePerSecond(
+    _getDefenseFactor(
       _troopTypeId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<[BigNumber]>;
@@ -1160,17 +1291,22 @@ export interface Curio extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[BigNumber]>;
 
+    _getOilConsumptionPerSecond(
+      _troopTypeId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
+
     _getPlayer(
       _player: string,
       overrides?: CallOverrides
     ): Promise<[PlayerStructOutput]>;
 
-    _getPlayerBalance(
+    _getPlayerCount(overrides?: CallOverrides): Promise<[BigNumber]>;
+
+    _getPlayerGoldBalance(
       _player: string,
       overrides?: CallOverrides
     ): Promise<[BigNumber]>;
-
-    _getPlayerCount(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     _getTileAt(
       _pos: PositionStruct,
@@ -1183,23 +1319,25 @@ export interface Curio extends BaseContract {
     ): Promise<[BigNumber]>;
 
     _getTroop(
-      _id: BigNumberish,
+      _troopId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<[TroopStructOutput]>;
 
-    _getTroopCost(
+    _getTroopGoldPrice(
       _troopTypeId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<[BigNumber]>;
+
+    _getTroopName(
+      _troopTypeId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<[number]>;
 
     _hasPort(_tile: TileStruct, overrides?: CallOverrides): Promise<[boolean]>;
 
     _inBound(_p: PositionStruct, overrides?: CallOverrides): Promise<[boolean]>;
 
-    _isLandTroop(
-      _troopTypeId: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<[boolean]>;
+    _isDebuffed(_player: string, overrides?: CallOverrides): Promise<[boolean]>;
 
     _isPlayerActive(
       _player: string,
@@ -1274,6 +1412,12 @@ export interface Curio extends BaseContract {
   ): Promise<ContractTransaction>;
 
   march(
+    _armyId: BigNumberish,
+    _targetPos: PositionStruct,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  moveTroop(
     _troopId: BigNumberish,
     _targetPos: PositionStruct,
     overrides?: Overrides & { from?: string | Promise<string> }
@@ -1285,7 +1429,19 @@ export interface Curio extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  bulkGetAllArmies(overrides?: CallOverrides): Promise<ArmyStructOutput[]>;
+
   bulkGetAllTroops(overrides?: CallOverrides): Promise<TroopStructOutput[]>;
+
+  getArmy(
+    _armyId: BigNumberish,
+    overrides?: CallOverrides
+  ): Promise<ArmyStructOutput>;
+
+  getArmyAt(
+    _pos: PositionStruct,
+    overrides?: CallOverrides
+  ): Promise<ArmyStructOutput>;
 
   getBase(
     _id: BigNumberish,
@@ -1334,11 +1490,6 @@ export interface Curio extends BaseContract {
     overrides?: CallOverrides
   ): Promise<TroopStructOutput>;
 
-  getTroopAt(
-    _pos: PositionStruct,
-    overrides?: CallOverrides
-  ): Promise<TroopStructOutput>;
-
   getTroopType(
     _troopTypeId: BigNumberish,
     overrides?: CallOverrides
@@ -1367,11 +1518,6 @@ export interface Curio extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  repair(
-    _pos: PositionStruct,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
   resumeGame(
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
@@ -1394,7 +1540,7 @@ export interface Curio extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  updatePlayerBalance(
+  updatePlayerBalances(
     _player: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
@@ -1406,10 +1552,50 @@ export interface Curio extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  _canTransportTroop(
-    _tile: TileStruct,
+  _getArmy(
+    _armyId: BigNumberish,
     overrides?: CallOverrides
-  ): Promise<boolean>;
+  ): Promise<ArmyStructOutput>;
+
+  _getArmyAttackFactor(
+    _armyTroopIds: BigNumberish[],
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
+
+  _getArmyDamagePerHit(
+    _armyTroopIds: BigNumberish[],
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
+
+  _getArmyDefenseFactor(
+    _armyTroopIds: BigNumberish[],
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
+
+  _getArmyHealth(
+    _armyTroopIds: BigNumberish[],
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
+
+  _getArmyInfantryPercentage(
+    _armyTroopIds: BigNumberish[],
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
+
+  _getArmyLargeActionCooldown(
+    _armyTroopIds: BigNumberish[],
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
+
+  _getArmyMovementCooldown(
+    _armyTroopIds: BigNumberish[],
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
+
+  _getArmyOilConsumptionPerSecond(
+    _armyTroopIds: BigNumberish[],
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
 
   _getAttackFactor(
     _troopTypeId: BigNumberish,
@@ -1431,22 +1617,17 @@ export interface Curio extends BaseContract {
     overrides?: CallOverrides
   ): Promise<string>;
 
-  _getCargoCapacity(
-    _troopId: BigNumberish,
-    overrides?: CallOverrides
-  ): Promise<BigNumber>;
-
   _getDamagePerHit(
     _troopTypeId: BigNumberish,
     overrides?: CallOverrides
   ): Promise<BigNumber>;
 
-  _getDefenseFactor(
-    _troopTypeId: BigNumberish,
+  _getDebuffedArmyDamagePerHit(
+    _armyTroopIds: BigNumberish[],
     overrides?: CallOverrides
   ): Promise<BigNumber>;
 
-  _getExpensePerSecond(
+  _getDefenseFactor(
     _troopTypeId: BigNumberish,
     overrides?: CallOverrides
   ): Promise<BigNumber>;
@@ -1466,17 +1647,22 @@ export interface Curio extends BaseContract {
     overrides?: CallOverrides
   ): Promise<BigNumber>;
 
+  _getOilConsumptionPerSecond(
+    _troopTypeId: BigNumberish,
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
+
   _getPlayer(
     _player: string,
     overrides?: CallOverrides
   ): Promise<PlayerStructOutput>;
 
-  _getPlayerBalance(
+  _getPlayerCount(overrides?: CallOverrides): Promise<BigNumber>;
+
+  _getPlayerGoldBalance(
     _player: string,
     overrides?: CallOverrides
   ): Promise<BigNumber>;
-
-  _getPlayerCount(overrides?: CallOverrides): Promise<BigNumber>;
 
   _getTileAt(
     _pos: PositionStruct,
@@ -1489,23 +1675,25 @@ export interface Curio extends BaseContract {
   ): Promise<BigNumber>;
 
   _getTroop(
-    _id: BigNumberish,
+    _troopId: BigNumberish,
     overrides?: CallOverrides
   ): Promise<TroopStructOutput>;
 
-  _getTroopCost(
+  _getTroopGoldPrice(
     _troopTypeId: BigNumberish,
     overrides?: CallOverrides
   ): Promise<BigNumber>;
+
+  _getTroopName(
+    _troopTypeId: BigNumberish,
+    overrides?: CallOverrides
+  ): Promise<number>;
 
   _hasPort(_tile: TileStruct, overrides?: CallOverrides): Promise<boolean>;
 
   _inBound(_p: PositionStruct, overrides?: CallOverrides): Promise<boolean>;
 
-  _isLandTroop(
-    _troopTypeId: BigNumberish,
-    overrides?: CallOverrides
-  ): Promise<boolean>;
+  _isDebuffed(_player: string, overrides?: CallOverrides): Promise<boolean>;
 
   _isPlayerActive(_player: string, overrides?: CallOverrides): Promise<boolean>;
 
@@ -1577,6 +1765,12 @@ export interface Curio extends BaseContract {
     ): Promise<void>;
 
     march(
+      _armyId: BigNumberish,
+      _targetPos: PositionStruct,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    moveTroop(
       _troopId: BigNumberish,
       _targetPos: PositionStruct,
       overrides?: CallOverrides
@@ -1588,7 +1782,19 @@ export interface Curio extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
+    bulkGetAllArmies(overrides?: CallOverrides): Promise<ArmyStructOutput[]>;
+
     bulkGetAllTroops(overrides?: CallOverrides): Promise<TroopStructOutput[]>;
+
+    getArmy(
+      _armyId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<ArmyStructOutput>;
+
+    getArmyAt(
+      _pos: PositionStruct,
+      overrides?: CallOverrides
+    ): Promise<ArmyStructOutput>;
 
     getBase(
       _id: BigNumberish,
@@ -1637,11 +1843,6 @@ export interface Curio extends BaseContract {
       overrides?: CallOverrides
     ): Promise<TroopStructOutput>;
 
-    getTroopAt(
-      _pos: PositionStruct,
-      overrides?: CallOverrides
-    ): Promise<TroopStructOutput>;
-
     getTroopType(
       _troopTypeId: BigNumberish,
       overrides?: CallOverrides
@@ -1665,8 +1866,6 @@ export interface Curio extends BaseContract {
 
     reactivatePlayer(_player: string, overrides?: CallOverrides): Promise<void>;
 
-    repair(_pos: PositionStruct, overrides?: CallOverrides): Promise<void>;
-
     resumeGame(overrides?: CallOverrides): Promise<void>;
 
     spawnTroop(
@@ -1687,7 +1886,7 @@ export interface Curio extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    updatePlayerBalance(
+    updatePlayerBalances(
       _player: string,
       overrides?: CallOverrides
     ): Promise<void>;
@@ -1699,10 +1898,50 @@ export interface Curio extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    _canTransportTroop(
-      _tile: TileStruct,
+    _getArmy(
+      _armyId: BigNumberish,
       overrides?: CallOverrides
-    ): Promise<boolean>;
+    ): Promise<ArmyStructOutput>;
+
+    _getArmyAttackFactor(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    _getArmyDamagePerHit(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    _getArmyDefenseFactor(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    _getArmyHealth(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    _getArmyInfantryPercentage(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    _getArmyLargeActionCooldown(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    _getArmyMovementCooldown(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    _getArmyOilConsumptionPerSecond(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
 
     _getAttackFactor(
       _troopTypeId: BigNumberish,
@@ -1724,22 +1963,17 @@ export interface Curio extends BaseContract {
       overrides?: CallOverrides
     ): Promise<string>;
 
-    _getCargoCapacity(
-      _troopId: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     _getDamagePerHit(
       _troopTypeId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    _getDefenseFactor(
-      _troopTypeId: BigNumberish,
+    _getDebuffedArmyDamagePerHit(
+      _armyTroopIds: BigNumberish[],
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    _getExpensePerSecond(
+    _getDefenseFactor(
       _troopTypeId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
@@ -1759,17 +1993,22 @@ export interface Curio extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
+    _getOilConsumptionPerSecond(
+      _troopTypeId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     _getPlayer(
       _player: string,
       overrides?: CallOverrides
     ): Promise<PlayerStructOutput>;
 
-    _getPlayerBalance(
+    _getPlayerCount(overrides?: CallOverrides): Promise<BigNumber>;
+
+    _getPlayerGoldBalance(
       _player: string,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
-
-    _getPlayerCount(overrides?: CallOverrides): Promise<BigNumber>;
 
     _getTileAt(
       _pos: PositionStruct,
@@ -1782,23 +2021,25 @@ export interface Curio extends BaseContract {
     ): Promise<BigNumber>;
 
     _getTroop(
-      _id: BigNumberish,
+      _troopId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<TroopStructOutput>;
 
-    _getTroopCost(
+    _getTroopGoldPrice(
       _troopTypeId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
+
+    _getTroopName(
+      _troopTypeId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<number>;
 
     _hasPort(_tile: TileStruct, overrides?: CallOverrides): Promise<boolean>;
 
     _inBound(_p: PositionStruct, overrides?: CallOverrides): Promise<boolean>;
 
-    _isLandTroop(
-      _troopTypeId: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<boolean>;
+    _isDebuffed(_player: string, overrides?: CallOverrides): Promise<boolean>;
 
     _isPlayerActive(
       _player: string,
@@ -1857,49 +2098,37 @@ export interface Curio extends BaseContract {
       newOwner?: string | null
     ): OwnershipTransferredEventFilter;
 
-    "AttackedBase(address,uint256,tuple,uint256,tuple)"(
+    "ArmyDeath(address,uint256)"(
       _player?: null,
-      _troopId?: null,
-      _troopInfo?: null,
-      _targetBaseId?: null,
-      _targetBaseInfo?: null
-    ): AttackedBaseEventFilter;
-    AttackedBase(
-      _player?: null,
-      _troopId?: null,
-      _troopInfo?: null,
-      _targetBaseId?: null,
-      _targetBaseInfo?: null
-    ): AttackedBaseEventFilter;
+      _armyId?: null
+    ): ArmyDeathEventFilter;
+    ArmyDeath(_player?: null, _armyId?: null): ArmyDeathEventFilter;
 
-    "AttackedTroop(address,uint256,tuple,uint256,tuple)"(
+    "AttackedArmy(address,uint256,tuple,tuple[],uint256,tuple,tuple[])"(
       _player?: null,
-      _troopId?: null,
-      _troopInfo?: null,
-      _targetTroopId?: null,
-      _targetTroopInfo?: null
-    ): AttackedTroopEventFilter;
-    AttackedTroop(
+      _armyId?: null,
+      _armyInfo?: null,
+      _armyTroops?: null,
+      _targetArmy?: null,
+      _targetArmyInfo?: null,
+      _targetArmyTroops?: null
+    ): AttackedArmyEventFilter;
+    AttackedArmy(
       _player?: null,
-      _troopId?: null,
-      _troopInfo?: null,
-      _targetTroopId?: null,
-      _targetTroopInfo?: null
-    ): AttackedTroopEventFilter;
+      _armyId?: null,
+      _armyInfo?: null,
+      _armyTroops?: null,
+      _targetArmy?: null,
+      _targetArmyInfo?: null,
+      _targetArmyTroops?: null
+    ): AttackedArmyEventFilter;
 
-    "BaseCaptured(address,uint256,uint256)"(
+    "BaseInfo(address,uint256,tuple)"(
       _player?: null,
-      _troopId?: null,
-      _baseId?: null
-    ): BaseCapturedEventFilter;
-    BaseCaptured(
-      _player?: null,
-      _troopId?: null,
-      _baseId?: null
-    ): BaseCapturedEventFilter;
-
-    "Death(address,uint256)"(_player?: null, _troopId?: null): DeathEventFilter;
-    Death(_player?: null, _troopId?: null): DeathEventFilter;
+      _baseId?: null,
+      _Base?: null
+    ): BaseInfoEventFilter;
+    BaseInfo(_player?: null, _baseId?: null, _Base?: null): BaseInfoEventFilter;
 
     "GamePaused()"(): GamePausedEventFilter;
     GamePaused(): GamePausedEventFilter;
@@ -1907,20 +2136,26 @@ export interface Curio extends BaseContract {
     "GameResumed()"(): GameResumedEventFilter;
     GameResumed(): GameResumedEventFilter;
 
-    "Moved(address,uint256,uint256,tuple,tuple)"(
+    "MovedArmy(address,uint256,tuple,uint256,tuple,tuple,uint256,tuple)"(
       _player?: null,
-      _troopId?: null,
-      _timestamp?: null,
+      timestamp?: null,
       _startPos?: null,
-      _targetPos?: null
-    ): MovedEventFilter;
-    Moved(
+      _startTileArmyId?: null,
+      _startTileArmy?: null,
+      _endPos?: null,
+      _targetTileArmyId?: null,
+      _targetTileArmy?: null
+    ): MovedArmyEventFilter;
+    MovedArmy(
       _player?: null,
-      _troopId?: null,
-      _timestamp?: null,
+      timestamp?: null,
       _startPos?: null,
-      _targetPos?: null
-    ): MovedEventFilter;
+      _startTileArmyId?: null,
+      _startTileArmy?: null,
+      _endPos?: null,
+      _targetTileArmyId?: null,
+      _targetTileArmy?: null
+    ): MovedArmyEventFilter;
 
     "NewPlayer(address,tuple)"(
       _player?: null,
@@ -1928,17 +2163,19 @@ export interface Curio extends BaseContract {
     ): NewPlayerEventFilter;
     NewPlayer(_player?: null, _pos?: null): NewPlayerEventFilter;
 
-    "NewTroop(address,uint256,tuple,tuple)"(
+    "NewTroop(address,uint256,tuple,uint256,tuple)"(
       _player?: null,
       _troopId?: null,
       _troop?: null,
-      _pos?: null
+      _armyId?: null,
+      _army?: null
     ): NewTroopEventFilter;
     NewTroop(
       _player?: null,
       _troopId?: null,
       _troop?: null,
-      _pos?: null
+      _armyId?: null,
+      _army?: null
     ): NewTroopEventFilter;
 
     "PlayerInfo(address,tuple)"(
@@ -1950,31 +2187,11 @@ export interface Curio extends BaseContract {
     "PlayerReactivated(address)"(_player?: null): PlayerReactivatedEventFilter;
     PlayerReactivated(_player?: null): PlayerReactivatedEventFilter;
 
-    "Recovered(address,uint256)"(
+    "TroopDeath(address,uint256)"(
       _player?: null,
       _troopId?: null
-    ): RecoveredEventFilter;
-    Recovered(_player?: null, _troopId?: null): RecoveredEventFilter;
-
-    "Repaired(address,uint256,uint256)"(
-      _player?: null,
-      _troopId?: null,
-      _health?: null
-    ): RepairedEventFilter;
-    Repaired(
-      _player?: null,
-      _troopId?: null,
-      _health?: null
-    ): RepairedEventFilter;
-
-    "UpdatePlayerBalance(address,uint256)"(
-      _player?: null,
-      _amount?: null
-    ): UpdatePlayerBalanceEventFilter;
-    UpdatePlayerBalance(
-      _player?: null,
-      _amount?: null
-    ): UpdatePlayerBalanceEventFilter;
+    ): TroopDeathEventFilter;
+    TroopDeath(_player?: null, _troopId?: null): TroopDeathEventFilter;
   };
 
   estimateGas: {
@@ -2015,6 +2232,12 @@ export interface Curio extends BaseContract {
     ): Promise<BigNumber>;
 
     march(
+      _armyId: BigNumberish,
+      _targetPos: PositionStruct,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    moveTroop(
       _troopId: BigNumberish,
       _targetPos: PositionStruct,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -2026,7 +2249,19 @@ export interface Curio extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    bulkGetAllArmies(overrides?: CallOverrides): Promise<BigNumber>;
+
     bulkGetAllTroops(overrides?: CallOverrides): Promise<BigNumber>;
+
+    getArmy(
+      _armyId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    getArmyAt(
+      _pos: PositionStruct,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
 
     getBase(_id: BigNumberish, overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -2069,11 +2304,6 @@ export interface Curio extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    getTroopAt(
-      _pos: PositionStruct,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     getTroopType(
       _troopTypeId: BigNumberish,
       overrides?: CallOverrides
@@ -2100,11 +2330,6 @@ export interface Curio extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    repair(
-      _pos: PositionStruct,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
     resumeGame(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
@@ -2127,7 +2352,7 @@ export interface Curio extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    updatePlayerBalance(
+    updatePlayerBalances(
       _player: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
@@ -2139,8 +2364,48 @@ export interface Curio extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    _canTransportTroop(
-      _tile: TileStruct,
+    _getArmy(
+      _armyId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    _getArmyAttackFactor(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    _getArmyDamagePerHit(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    _getArmyDefenseFactor(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    _getArmyHealth(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    _getArmyInfantryPercentage(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    _getArmyLargeActionCooldown(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    _getArmyMovementCooldown(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    _getArmyOilConsumptionPerSecond(
+      _armyTroopIds: BigNumberish[],
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
@@ -2161,22 +2426,17 @@ export interface Curio extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    _getCargoCapacity(
-      _troopId: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     _getDamagePerHit(
       _troopTypeId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    _getDefenseFactor(
-      _troopTypeId: BigNumberish,
+    _getDebuffedArmyDamagePerHit(
+      _armyTroopIds: BigNumberish[],
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    _getExpensePerSecond(
+    _getDefenseFactor(
       _troopTypeId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
@@ -2196,14 +2456,19 @@ export interface Curio extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    _getPlayer(_player: string, overrides?: CallOverrides): Promise<BigNumber>;
-
-    _getPlayerBalance(
-      _player: string,
+    _getOilConsumptionPerSecond(
+      _troopTypeId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
+    _getPlayer(_player: string, overrides?: CallOverrides): Promise<BigNumber>;
+
     _getPlayerCount(overrides?: CallOverrides): Promise<BigNumber>;
+
+    _getPlayerGoldBalance(
+      _player: string,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
 
     _getTileAt(
       _pos: PositionStruct,
@@ -2215,9 +2480,17 @@ export interface Curio extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    _getTroop(_id: BigNumberish, overrides?: CallOverrides): Promise<BigNumber>;
+    _getTroop(
+      _troopId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
 
-    _getTroopCost(
+    _getTroopGoldPrice(
+      _troopTypeId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    _getTroopName(
       _troopTypeId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
@@ -2226,10 +2499,7 @@ export interface Curio extends BaseContract {
 
     _inBound(_p: PositionStruct, overrides?: CallOverrides): Promise<BigNumber>;
 
-    _isLandTroop(
-      _troopTypeId: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
+    _isDebuffed(_player: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     _isPlayerActive(
       _player: string,
@@ -2305,6 +2575,12 @@ export interface Curio extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     march(
+      _armyId: BigNumberish,
+      _targetPos: PositionStruct,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    moveTroop(
       _troopId: BigNumberish,
       _targetPos: PositionStruct,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -2316,7 +2592,19 @@ export interface Curio extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
+    bulkGetAllArmies(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
     bulkGetAllTroops(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    getArmy(
+      _armyId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    getArmyAt(
+      _pos: PositionStruct,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
 
     getBase(
       _id: BigNumberish,
@@ -2365,11 +2653,6 @@ export interface Curio extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    getTroopAt(
-      _pos: PositionStruct,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     getTroopType(
       _troopTypeId: BigNumberish,
       overrides?: CallOverrides
@@ -2396,11 +2679,6 @@ export interface Curio extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    repair(
-      _pos: PositionStruct,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
     resumeGame(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
@@ -2423,7 +2701,7 @@ export interface Curio extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    updatePlayerBalance(
+    updatePlayerBalances(
       _player: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
@@ -2435,8 +2713,48 @@ export interface Curio extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    _canTransportTroop(
-      _tile: TileStruct,
+    _getArmy(
+      _armyId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    _getArmyAttackFactor(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    _getArmyDamagePerHit(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    _getArmyDefenseFactor(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    _getArmyHealth(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    _getArmyInfantryPercentage(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    _getArmyLargeActionCooldown(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    _getArmyMovementCooldown(
+      _armyTroopIds: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    _getArmyOilConsumptionPerSecond(
+      _armyTroopIds: BigNumberish[],
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
@@ -2460,22 +2778,17 @@ export interface Curio extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    _getCargoCapacity(
-      _troopId: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     _getDamagePerHit(
       _troopTypeId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    _getDefenseFactor(
-      _troopTypeId: BigNumberish,
+    _getDebuffedArmyDamagePerHit(
+      _armyTroopIds: BigNumberish[],
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    _getExpensePerSecond(
+    _getDefenseFactor(
       _troopTypeId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
@@ -2495,17 +2808,22 @@ export interface Curio extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
+    _getOilConsumptionPerSecond(
+      _troopTypeId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     _getPlayer(
       _player: string,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    _getPlayerBalance(
+    _getPlayerCount(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    _getPlayerGoldBalance(
       _player: string,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
-
-    _getPlayerCount(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     _getTileAt(
       _pos: PositionStruct,
@@ -2518,11 +2836,16 @@ export interface Curio extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     _getTroop(
-      _id: BigNumberish,
+      _troopId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    _getTroopCost(
+    _getTroopGoldPrice(
+      _troopTypeId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    _getTroopName(
       _troopTypeId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
@@ -2537,8 +2860,8 @@ export interface Curio extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    _isLandTroop(
-      _troopTypeId: BigNumberish,
+    _isDebuffed(
+      _player: string,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 

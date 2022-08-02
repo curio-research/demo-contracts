@@ -47,81 +47,58 @@ contract DiamondDeployTest is Test {
 
     uint256 public initTroopNonce = 1;
 
-    uint256 public armyTroopTypeId = indexToId(uint256(TROOP_NAME.ARMY));
-    uint256 public troopTransportTroopTypeId = indexToId(uint256(TROOP_NAME.TROOP_TRANSPORT));
+    uint256 public infantryTroopTypeId = indexToId(uint256(TROOP_NAME.INFANTRY));
     uint256 public destroyerTroopTypeId = indexToId(uint256(TROOP_NAME.DESTROYER));
     uint256 public battleshipTroopTypeId = indexToId(uint256(TROOP_NAME.BATTLESHIP));
 
     // troop types
-    TroopType public armyTroopType =
+    TroopType public infantryTroopType =
         TroopType({
-            name: TROOP_NAME.ARMY,
-            isLandTroop: true,
-            maxHealth: 1,
-            damagePerHit: 1,
+            name: TROOP_NAME.INFANTRY,
+            maxHealth: 100,
+            damagePerHit: 100,
             attackFactor: 100,
             defenseFactor: 100,
-            cargoCapacity: 0,
             movementCooldown: 1,
             largeActionCooldown: 1,
-            cost: 6,
-            expensePerSecond: 0 //
-        });
-    TroopType public troopTransportTroopType =
-        TroopType({
-            name: TROOP_NAME.TROOP_TRANSPORT,
-            isLandTroop: false,
-            maxHealth: 3,
-            damagePerHit: 1,
-            attackFactor: 50,
-            defenseFactor: 50,
-            cargoCapacity: 6,
-            movementCooldown: 1,
-            largeActionCooldown: 1,
-            cost: 14,
-            expensePerSecond: 1 //
+            goldPrice: 6,
+            oilConsumptionPerSecond: 1 //
         });
     TroopType public destroyerTroopType =
         TroopType({
             name: TROOP_NAME.DESTROYER,
-            isLandTroop: false,
-            maxHealth: 3,
-            damagePerHit: 1,
+            maxHealth: 300,
+            damagePerHit: 100,
             attackFactor: 100,
             defenseFactor: 100,
-            cargoCapacity: 0,
             movementCooldown: 1,
             largeActionCooldown: 1,
-            cost: 20,
-            expensePerSecond: 1 //
+            goldPrice: 20,
+            oilConsumptionPerSecond: 1 //
         });
     TroopType public cruiserTroopType =
         TroopType({
             name: TROOP_NAME.CRUISER,
-            isLandTroop: false,
-            maxHealth: 8,
-            damagePerHit: 2,
+            maxHealth: 800,
+            damagePerHit: 200,
             attackFactor: 100,
             defenseFactor: 100,
-            cargoCapacity: 0,
             movementCooldown: 1,
             largeActionCooldown: 1,
-            cost: 30,
-            expensePerSecond: 1 //
+            goldPrice: 30,
+            oilConsumptionPerSecond: 1 //
         });
     TroopType public battleshipTroopType =
         TroopType({
             name: TROOP_NAME.BATTLESHIP,
-            isLandTroop: false,
-            maxHealth: 12,
-            damagePerHit: 3,
+            maxHealth: 1200,
+            damagePerHit: 300,
             attackFactor: 100,
             defenseFactor: 100,
-            cargoCapacity: 0,
             movementCooldown: 1,
             largeActionCooldown: 1,
-            cost: 50,
-            expensePerSecond: 2 //
+            goldPrice: 50,
+            oilConsumptionPerSecond: 2 //
         });
 
     // we assume these two facet selectors do not change. If they do however, we should use getSelectors
@@ -222,27 +199,27 @@ contract DiamondDeployTest is Test {
                 admin: deployer,
                 worldWidth: 1000,
                 worldHeight: 1000,
-                numPorts: 15,
-                numCities: 15, // yo
                 combatEfficiency: 50,
-                numInitTerrainTypes: 5,
-                initBatchSize: 100,
-                initPlayerBalance: 20,
-                defaultBaseGoldGenerationPerSecond: 5,
+                numInitTerrainTypes: 6,
+                initBatchSize: 50,
+                initPlayerGoldBalance: 20,
+                initPlayerOilBalance: 20,
                 maxBaseCountPerPlayer: 20,
                 maxTroopCountPerPlayer: 20,
-                maxPlayerCount: 50
+                maxPlayerCount: 50,
+                defaultBaseGoldGenerationPerSecond: 5,
+                defaultWellOilGenerationPerSecond: 5,
+                debuffFactor: 80 //
             });
     }
 
     // Note: hardcoded
     function _generateTroopTypes() internal view returns (TroopType[] memory) {
         TroopType[] memory _troopTypes = new TroopType[](5);
-        _troopTypes[0] = armyTroopType;
-        _troopTypes[1] = troopTransportTroopType;
-        _troopTypes[2] = destroyerTroopType;
-        _troopTypes[3] = cruiserTroopType;
-        _troopTypes[4] = battleshipTroopType;
+        _troopTypes[0] = infantryTroopType;
+        _troopTypes[1] = destroyerTroopType;
+        _troopTypes[2] = cruiserTroopType;
+        _troopTypes[3] = battleshipTroopType;
         return _troopTypes;
     }
 
@@ -258,6 +235,7 @@ contract DiamondDeployTest is Test {
         uint256[] memory _portCol = new uint256[](_height);
         uint256[] memory _cityCol = new uint256[](_height);
 
+        // set individual columns
         for (uint256 y = 0; y < _height; y++) {
             _coastCol[y] = 0;
             _landCol[y] = 1;
@@ -266,6 +244,7 @@ contract DiamondDeployTest is Test {
             _cityCol[y] = 4;
         }
 
+        // set whole map
         uint256[][] memory _map = new uint256[][](_width);
         for (uint256 x = 0; x < _width; x += _interval) {
             _map[x] = _waterCol;
@@ -280,10 +259,13 @@ contract DiamondDeployTest is Test {
             _map[x + 9] = _landCol;
         }
 
+        // set oil wells
+        _map[0][7] = 5;
+        _map[5][0] = 5;
+        _map[7][8] = 5;
+
         return _map;
     }
-
-    // helper functions
 
     // generates values that need to be initialized from the cli and pipes it back into solidity! magic
     function getInitVal() public returns (WorldConstants memory _constants, TroopType[] memory _troopTypes) {
@@ -309,8 +291,12 @@ contract DiamondDeployTest is Test {
         selectors = abi.decode(res, (bytes4[]));
     }
 
-    // FIXME: change to 999
     function indexToId(uint256 _index) public pure returns (uint256) {
         return _index + 1;
+    }
+
+    // helpers
+    function getRightPos(Position memory _pos) public pure returns (Position memory) {
+        return Position({x: _pos.x + 1, y: _pos.y});
     }
 }

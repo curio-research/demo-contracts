@@ -3,8 +3,9 @@ pragma solidity ^0.8.4;
 
 import "contracts/libraries/Storage.sol";
 import {Util} from "contracts/libraries/GameUtil.sol";
-import {BASE_NAME, Base, GameState, Player, Position, TERRAIN, Tile, Troop, TroopType, WorldConstants} from "contracts/libraries/Types.sol";
+import {BASE_NAME, Base, GameState, Player, Position, TERRAIN, Tile, Troop, Army, TroopType, WorldConstants} from "contracts/libraries/Types.sol";
 import "openzeppelin-contracts/contracts/utils/math/SafeMath.sol";
+import {EngineModules} from "contracts/libraries/EngineModules.sol";
 
 /// @title Helper facet
 /// @notice Contains admin functions and state functions, both of which should be out of scope for players
@@ -31,7 +32,7 @@ contract HelperFacet is UseStorage {
 
         address[] memory _allPlayers = gs().players;
         for (uint256 i = 0; i < _allPlayers.length; i++) {
-            Util._updatePlayerBalance(_allPlayers[i]);
+            Util._updatePlayerBalances(_allPlayers[i]);
         }
 
         gs().isPaused = true;
@@ -62,7 +63,7 @@ contract HelperFacet is UseStorage {
         require(!Util._isPlayerActive(_player), "CURIO: Player is active");
 
         gs().playerMap[_player].active = true;
-        gs().playerMap[_player].balance = gs().worldConstants.initPlayerBalance; // reload balance
+        gs().playerMap[_player].goldBalance = gs().worldConstants.initPlayerGoldBalance; // reload balance
         emit Util.PlayerReactivated(_player);
     }
 
@@ -92,14 +93,11 @@ contract HelperFacet is UseStorage {
         require(_tile.occupantId == NULL, "CURIO: Tile occupied");
 
         if (_tile.baseId != NULL) {
-            Base memory _base = gs().baseIdMap[_tile.baseId];
-            require(_base.owner == _player, "CURIO: Can only spawn troop in player's base");
-            require(Util._isLandTroop(_troopTypeId) || _base.name == BASE_NAME.PORT, "CURIO: Can only spawn water troops in ports");
+            // require(Util._getBaseOwner(_tile.baseId) == _player, "CURIO: Can only spawn troop in player's base");
+            require(EngineModules._geographicCheckTroop(_troopTypeId, _tile), "CURIO: Can only spawn water troops in ports");
         }
 
-        (uint256 _troopId, Troop memory _troop) = Util._addTroop(_player, _pos, _troopTypeId);
-
-        emit Util.NewTroop(_player, _troopId, _troop, _pos);
+        Util._addTroop(_player, _pos, _troopTypeId);
     }
 
     /**
@@ -119,11 +117,12 @@ contract HelperFacet is UseStorage {
         require(_base.owner == NULL_ADDR, "CURIO: Base is owned");
 
         gs().baseIdMap[_tile.baseId].owner = _player;
-        Util._updatePlayerBalance(_player);
+        gs().baseIdMap[_tile.baseId].health = 800;
+
+        Util._updatePlayerBalances(_player);
         gs().playerMap[_player].numOwnedBases++;
         gs().playerMap[_player].totalGoldGenerationPerUpdate += _base.goldGenerationPerSecond;
-
-        emit Util.BaseCaptured(_player, NULL, _tile.baseId);
+        gs().playerMap[_player].totalOilGenerationPerUpdate += _base.oilGenerationPerSecond;
     }
 
     /**
@@ -141,37 +140,10 @@ contract HelperFacet is UseStorage {
     // ----------------------------------------------------------------------
 
     /**
-     * Update player's balance to most recent state.
+     * Update player's balances to the latest state.
      * @param _player player address
      */
-    function updatePlayerBalance(address _player) external {
-        Util._updatePlayerBalance(_player);
-    }
-
-    /**
-     * Restore 1 health to the troop in a base.
-     * @param _pos position of base
-     */
-    function repair(Position memory _pos) external {
-        require(Util._inBound(_pos), "CURIO: Out of bound");
-        if (!Util._getTileAt(_pos).isInitialized) Util._initializeTile(_pos);
-
-        Tile memory _tile = Util._getTileAt(_pos);
-        require(_tile.baseId != NULL, "CURIO: No base found");
-        require(Util._getBaseOwner(_tile.baseId) == msg.sender, "CURIO: Can only repair in own base");
-
-        uint256 _troopId = _tile.occupantId;
-        require(_troopId != NULL, "CURIO: No troop to repair");
-
-        Troop memory _troop = gs().troopIdMap[_troopId];
-        require(_troop.owner == msg.sender, "CURIO: Can only repair own troop");
-        require(_troop.health < Util._getMaxHealth(_troop.troopTypeId), "CURIO: Troop already at full health");
-        require((block.timestamp - _troop.lastRepaired) >= 1, "CURIO: Repaired too recently");
-
-        _troop.health++;
-        gs().troopIdMap[_troopId].health = _troop.health;
-        gs().troopIdMap[_troopId].lastRepaired = block.timestamp;
-        emit Util.Repaired(msg.sender, _tile.occupantId, _troop.health);
-        if (_troop.health == Util._getMaxHealth(_troop.troopTypeId)) emit Util.Recovered(msg.sender, _troopId);
+    function updatePlayerBalances(address _player) external {
+        Util._updatePlayerBalances(_player);
     }
 }

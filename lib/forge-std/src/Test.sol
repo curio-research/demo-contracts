@@ -46,7 +46,11 @@ abstract contract Test is DSTest {
         vm.prank(who, origin);
     }
 
-    function hoax(address who, address origin, uint256 give) public {
+    function hoax(
+        address who,
+        address origin,
+        uint256 give
+    ) public {
         vm.deal(who, give);
         vm.prank(who, origin);
     }
@@ -69,7 +73,11 @@ abstract contract Test is DSTest {
         vm.startPrank(who, origin);
     }
 
-    function startHoax(address who, address origin, uint256 give) public {
+    function startHoax(
+        address who,
+        address origin,
+        uint256 give
+    ) public {
         vm.deal(who, give);
         vm.startPrank(who, origin);
     }
@@ -80,13 +88,13 @@ abstract contract Test is DSTest {
     }
 
     // DEPRECATED: Use `deal` instead
-    function tip(address token, address to, uint256 give) public {
+    function tip(
+        address token,
+        address to,
+        uint256 give
+    ) public {
         emit WARNING_Deprecated("The `tip` stdcheat has been deprecated. Use `deal` instead.");
-        stdstore
-            .target(token)
-            .sig(0x70a08231)
-            .with_key(to)
-            .checked_write(give);
+        stdstore.target(token).sig(0x70a08231).with_key(to).checked_write(give);
     }
 
     // The same as Hevm's `deal`
@@ -97,53 +105,54 @@ abstract contract Test is DSTest {
 
     // Set the balance of an account for any ERC20 token
     // Use the alternative signature to update `totalSupply`
-    function deal(address token, address to, uint256 give) public {
+    function deal(
+        address token,
+        address to,
+        uint256 give
+    ) public {
         deal(token, to, give, false);
     }
 
-    function deal(address token, address to, uint256 give, bool adjust) public {
+    function deal(
+        address token,
+        address to,
+        uint256 give,
+        bool adjust
+    ) public {
         // get current balance
         (, bytes memory balData) = token.call(abi.encodeWithSelector(0x70a08231, to));
         uint256 prevBal = abi.decode(balData, (uint256));
 
         // update balance
-        stdstore
-            .target(token)
-            .sig(0x70a08231)
-            .with_key(to)
-            .checked_write(give);
+        stdstore.target(token).sig(0x70a08231).with_key(to).checked_write(give);
 
         // update total supply
-        if(adjust){
+        if (adjust) {
             (, bytes memory totSupData) = token.call(abi.encodeWithSelector(0x18160ddd));
             uint256 totSup = abi.decode(totSupData, (uint256));
-            if(give < prevBal) {
+            if (give < prevBal) {
                 totSup -= (prevBal - give);
             } else {
                 totSup += (give - prevBal);
             }
-            stdstore
-                .target(token)
-                .sig(0x18160ddd)
-                .checked_write(totSup);
+            stdstore.target(token).sig(0x18160ddd).checked_write(totSup);
         }
     }
 
-    function bound(uint256 x, uint256 min, uint256 max) public returns (uint256 result) {
+    function bound(
+        uint256 x,
+        uint256 min,
+        uint256 max
+    ) public returns (uint256 result) {
         require(min <= max, "Test bound(uint256,uint256,uint256): Max is less than min.");
 
         uint256 size = max - min;
 
-        if (size == 0)
-        {
+        if (size == 0) {
             result = min;
-        }
-        else if (size == UINT256_MAX)
-        {
+        } else if (size == UINT256_MAX) {
             result = x;
-        }
-        else
-        {
+        } else {
             ++size; // make `max` inclusive
             uint256 mod = x % size;
             result = min + mod;
@@ -155,36 +164,24 @@ abstract contract Test is DSTest {
     // Deploy a contract by fetching the contract bytecode from
     // the artifacts directory
     // e.g. `deployCode(code, abi.encode(arg1,arg2,arg3))`
-    function deployCode(string memory what, bytes memory args)
-        public
-        returns (address addr)
-    {
+    function deployCode(string memory what, bytes memory args) public returns (address addr) {
         bytes memory bytecode = abi.encodePacked(vm.getCode(what), args);
         /// @solidity memory-safe-assembly
         assembly {
             addr := create(0, add(bytecode, 0x20), mload(bytecode))
         }
 
-        require(
-            addr != address(0),
-            "Test deployCode(string,bytes): Deployment failed."
-        );
+        require(addr != address(0), "Test deployCode(string,bytes): Deployment failed.");
     }
 
-    function deployCode(string memory what)
-        public
-        returns (address addr)
-    {
+    function deployCode(string memory what) public returns (address addr) {
         bytes memory bytecode = vm.getCode(what);
         /// @solidity memory-safe-assembly
         assembly {
             addr := create(0, add(bytecode, 0x20), mload(bytecode))
         }
 
-        require(
-            addr != address(0),
-            "Test deployCode(string): Deployment failed."
-        );
+        require(addr != address(0), "Test deployCode(string): Deployment failed.");
     }
 
     /*//////////////////////////////////////////////////////////////////////////
@@ -206,14 +203,18 @@ abstract contract Test is DSTest {
 
     function assertEq(bool a, bool b) internal {
         if (a != b) {
-            emit log                ("Error: a == b not satisfied [bool]");
-            emit log_named_string   ("  Expected", b ? "true" : "false");
-            emit log_named_string   ("    Actual", a ? "true" : "false");
+            emit log("Error: a == b not satisfied [bool]");
+            emit log_named_string("  Expected", b ? "true" : "false");
+            emit log_named_string("    Actual", a ? "true" : "false");
             fail();
         }
     }
 
-    function assertEq(bool a, bool b, string memory err) internal {
+    function assertEq(
+        bool a,
+        bool b,
+        string memory err
+    ) internal {
         if (a != b) {
             emit log_named_string("Error", err);
             assertEq(a, b);
@@ -222,16 +223,20 @@ abstract contract Test is DSTest {
 
     function assertEq(bytes memory a, bytes memory b) internal {
         if (keccak256(a) != keccak256(b)) {
-            emit log            ("Error: a == b not satisfied [bytes]");
+            emit log("Error: a == b not satisfied [bytes]");
             emit log_named_bytes("  Expected", b);
             emit log_named_bytes("    Actual", a);
             fail();
         }
     }
 
-    function assertEq(bytes memory a, bytes memory b, string memory err) internal {
+    function assertEq(
+        bytes memory a,
+        bytes memory b,
+        string memory err
+    ) internal {
         if (keccak256(a) != keccak256(b)) {
-            emit log_named_string   ("Error", err);
+            emit log_named_string("Error", err);
             assertEq(a, b);
         }
     }
@@ -244,11 +249,11 @@ abstract contract Test is DSTest {
         uint256 delta = stdMath.delta(a, b);
 
         if (delta > maxDelta) {
-            emit log            ("Error: a ~= b not satisfied [uint]");
-            emit log_named_uint ("  Expected", b);
-            emit log_named_uint ("    Actual", a);
-            emit log_named_uint (" Max Delta", maxDelta);
-            emit log_named_uint ("     Delta", delta);
+            emit log("Error: a ~= b not satisfied [uint]");
+            emit log_named_uint("  Expected", b);
+            emit log_named_uint("    Actual", a);
+            emit log_named_uint(" Max Delta", maxDelta);
+            emit log_named_uint("     Delta", delta);
             fail();
         }
     }
@@ -262,7 +267,7 @@ abstract contract Test is DSTest {
         uint256 delta = stdMath.delta(a, b);
 
         if (delta > maxDelta) {
-            emit log_named_string   ("Error", err);
+            emit log_named_string("Error", err);
             assertApproxEqAbs(a, b, maxDelta);
         }
     }
@@ -275,11 +280,11 @@ abstract contract Test is DSTest {
         uint256 delta = stdMath.delta(a, b);
 
         if (delta > maxDelta) {
-            emit log            ("Error: a ~= b not satisfied [int]");
-            emit log_named_int  ("  Expected", b);
-            emit log_named_int  ("    Actual", a);
-            emit log_named_uint (" Max Delta", maxDelta);
-            emit log_named_uint ("     Delta", delta);
+            emit log("Error: a ~= b not satisfied [int]");
+            emit log_named_int("  Expected", b);
+            emit log_named_int("    Actual", a);
+            emit log_named_uint(" Max Delta", maxDelta);
+            emit log_named_uint("     Delta", delta);
             fail();
         }
     }
@@ -293,7 +298,7 @@ abstract contract Test is DSTest {
         uint256 delta = stdMath.delta(a, b);
 
         if (delta > maxDelta) {
-            emit log_named_string   ("Error", err);
+            emit log_named_string("Error", err);
             assertApproxEqAbs(a, b, maxDelta);
         }
     }
@@ -308,11 +313,11 @@ abstract contract Test is DSTest {
         uint256 percentDelta = stdMath.percentDelta(a, b);
 
         if (percentDelta > maxPercentDelta) {
-            emit log                    ("Error: a ~= b not satisfied [uint]");
-            emit log_named_uint         ("    Expected", b);
-            emit log_named_uint         ("      Actual", a);
-            emit log_named_decimal_uint (" Max % Delta", maxPercentDelta, 18);
-            emit log_named_decimal_uint ("     % Delta", percentDelta, 18);
+            emit log("Error: a ~= b not satisfied [uint]");
+            emit log_named_uint("    Expected", b);
+            emit log_named_uint("      Actual", a);
+            emit log_named_decimal_uint(" Max % Delta", maxPercentDelta, 18);
+            emit log_named_decimal_uint("     % Delta", percentDelta, 18);
             fail();
         }
     }
@@ -328,7 +333,7 @@ abstract contract Test is DSTest {
         uint256 percentDelta = stdMath.percentDelta(a, b);
 
         if (percentDelta > maxPercentDelta) {
-            emit log_named_string       ("Error", err);
+            emit log_named_string("Error", err);
             assertApproxEqRel(a, b, maxPercentDelta);
         }
     }
@@ -343,9 +348,9 @@ abstract contract Test is DSTest {
         uint256 percentDelta = stdMath.percentDelta(a, b);
 
         if (percentDelta > maxPercentDelta) {
-            emit log                   ("Error: a ~= b not satisfied [int]");
-            emit log_named_int         ("    Expected", b);
-            emit log_named_int         ("      Actual", a);
+            emit log("Error: a ~= b not satisfied [int]");
+            emit log_named_int("    Expected", b);
+            emit log_named_int("      Actual", a);
             emit log_named_decimal_uint(" Max % Delta", maxPercentDelta, 18);
             emit log_named_decimal_uint("     % Delta", percentDelta, 18);
             fail();
@@ -363,7 +368,7 @@ abstract contract Test is DSTest {
         uint256 percentDelta = stdMath.percentDelta(a, b);
 
         if (percentDelta > maxPercentDelta) {
-            emit log_named_string      ("Error", err);
+            emit log_named_string("Error", err);
             assertApproxEqRel(a, b, maxPercentDelta);
         }
     }
@@ -392,9 +397,8 @@ library stdError {
 //////////////////////////////////////////////////////////////////////////*/
 
 struct StdStorage {
-    mapping (address => mapping(bytes4 => mapping(bytes32 => uint256))) slots;
-    mapping (address => mapping(bytes4 =>  mapping(bytes32 => bool))) finds;
-
+    mapping(address => mapping(bytes4 => mapping(bytes32 => uint256))) slots;
+    mapping(address => mapping(bytes4 => mapping(bytes32 => bool))) finds;
     bytes32[] _keys;
     bytes4 _sig;
     uint256 _depth;
@@ -403,21 +407,15 @@ struct StdStorage {
 }
 
 library stdStorage {
-    event SlotFound(address who, bytes4 fsig, bytes32 keysHash, uint slot);
-    event WARNING_UninitedSlot(address who, uint slot);
+    event SlotFound(address who, bytes4 fsig, bytes32 keysHash, uint256 slot);
+    event WARNING_UninitedSlot(address who, uint256 slot);
 
     uint256 private constant UINT256_MAX = 115792089237316195423570985008687907853269984665640564039457584007913129639935;
     int256 private constant INT256_MAX = 57896044618658097711785492504343953926634992332820282019728792003956564819967;
 
-    Vm private constant vm_std_store = Vm(address(uint160(uint256(keccak256('hevm cheat code')))));
+    Vm private constant vm_std_store = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
 
-    function sigs(
-        string memory sigStr
-    )
-        internal
-        pure
-        returns (bytes4)
-    {
+    function sigs(string memory sigStr) internal pure returns (bytes4) {
         return bytes4(keccak256(bytes(sigStr)));
     }
 
@@ -427,12 +425,7 @@ library stdStorage {
     //  if map, will be keccak256(abi.encode(key, uint(slot)));
     //  if deep map, will be keccak256(abi.encode(key1, keccak256(abi.encode(key0, uint(slot)))));
     //  if map struct, will be bytes32(uint256(keccak256(abi.encode(key1, keccak256(abi.encode(key0, uint(slot)))))) + structFieldDepth);
-    function find(
-        StdStorage storage self
-    )
-        internal
-        returns (uint256)
-    {
+    function find(StdStorage storage self) internal returns (uint256) {
         address who = self._target;
         bytes4 fsig = self._sig;
         uint256 field_depth = self._depth;
@@ -447,7 +440,7 @@ library stdStorage {
         bytes32 fdat;
         {
             (, bytes memory rdat) = who.staticcall(cald);
-            fdat = bytesToBytes32(rdat, 32*field_depth);
+            fdat = bytesToBytes32(rdat, 32 * field_depth);
         }
 
         (bytes32[] memory reads, ) = vm_std_store.accesses(address(who));
@@ -474,7 +467,7 @@ library stdStorage {
                 bytes memory rdat;
                 {
                     (success, rdat) = who.staticcall(cald);
-                    fdat = bytesToBytes32(rdat, 32*field_depth);
+                    fdat = bytesToBytes32(rdat, 32 * field_depth);
                 }
 
                 if (success && fdat == bytes32(hex"1337")) {
@@ -525,6 +518,7 @@ library stdStorage {
         self._keys.push(bytes32(amt));
         return self;
     }
+
     function with_key(StdStorage storage self, bytes32 key) internal returns (StdStorage storage) {
         self._keys.push(key);
         return self;
@@ -552,10 +546,7 @@ library stdStorage {
         checked_write(self, t);
     }
 
-    function checked_write(
-        StdStorage storage self,
-        bytes32 set
-    ) internal {
+    function checked_write(StdStorage storage self, bytes32 set) internal {
         address who = self._target;
         bytes4 fsig = self._sig;
         uint256 field_depth = self._depth;
@@ -570,7 +561,7 @@ library stdStorage {
         bytes32 fdat;
         {
             (, bytes memory rdat) = who.staticcall(cald);
-            fdat = bytesToBytes32(rdat, 32*field_depth);
+            fdat = bytesToBytes32(rdat, 32 * field_depth);
         }
         bytes32 curr = vm_std_store.load(who, slot);
 
@@ -594,7 +585,6 @@ library stdStorage {
         return abi.decode(read(self), (bytes32));
     }
 
-
     function read_bool(StdStorage storage self) internal returns (bool) {
         return abi.decode(read(self), (bool));
     }
@@ -611,18 +601,17 @@ library stdStorage {
         return abi.decode(read(self), (int256));
     }
 
-    function bytesToBytes32(bytes memory b, uint offset) public pure returns (bytes32) {
+    function bytesToBytes32(bytes memory b, uint256 offset) public pure returns (bytes32) {
         bytes32 out;
 
         uint256 max = b.length > 32 ? 32 : b.length;
-        for (uint i = 0; i < max; i++) {
+        for (uint256 i = 0; i < max; i++) {
             out |= bytes32(b[offset + i] & 0xFF) >> (i * 8);
         }
         return out;
     }
 
-    function flatten(bytes32[] memory b) private pure returns (bytes memory)
-    {
+    function flatten(bytes32[] memory b) private pure returns (bytes memory) {
         bytes memory result = new bytes(b.length * 32);
         for (uint256 i = 0; i < b.length; i++) {
             bytes32 k = b[i];
@@ -645,21 +634,18 @@ library stdMath {
 
     function abs(int256 a) internal pure returns (uint256) {
         // Required or it will fail when `a = type(int256).min`
-        if (a == INT256_MIN)
-            return 57896044618658097711785492504343953926634992332820282019728792003956564819968;
+        if (a == INT256_MIN) return 57896044618658097711785492504343953926634992332820282019728792003956564819968;
 
         return uint256(a >= 0 ? a : -a);
     }
 
     function delta(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a > b
-            ? a - b
-            : b - a;
+        return a > b ? a - b : b - a;
     }
 
     function delta(int256 a, int256 b) internal pure returns (uint256) {
         // a and b are of the same sign
-        if (a >= 0 && b >= 0 || a < 0 && b < 0) {
+        if ((a >= 0 && b >= 0) || (a < 0 && b < 0)) {
             return delta(abs(a), abs(b));
         }
 
@@ -670,13 +656,13 @@ library stdMath {
     function percentDelta(uint256 a, uint256 b) internal pure returns (uint256) {
         uint256 absDelta = delta(a, b);
 
-        return absDelta * 1e18 / b;
+        return (absDelta * 1e18) / b;
     }
 
     function percentDelta(int256 a, int256 b) internal pure returns (uint256) {
         uint256 absDelta = delta(a, b);
         uint256 absB = abs(b);
 
-        return absDelta * 1e18 / absB;
+        return (absDelta * 1e18) / absB;
     }
 }

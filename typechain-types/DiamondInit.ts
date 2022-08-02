@@ -21,20 +21,22 @@ export type WorldConstantsStruct = {
   admin: string;
   worldWidth: BigNumberish;
   worldHeight: BigNumberish;
-  numPorts: BigNumberish;
-  numCities: BigNumberish;
   combatEfficiency: BigNumberish;
   numInitTerrainTypes: BigNumberish;
   initBatchSize: BigNumberish;
-  initPlayerBalance: BigNumberish;
-  defaultBaseGoldGenerationPerSecond: BigNumberish;
+  initPlayerGoldBalance: BigNumberish;
+  initPlayerOilBalance: BigNumberish;
   maxBaseCountPerPlayer: BigNumberish;
   maxTroopCountPerPlayer: BigNumberish;
   maxPlayerCount: BigNumberish;
+  defaultBaseGoldGenerationPerSecond: BigNumberish;
+  defaultWellOilGenerationPerSecond: BigNumberish;
+  debuffFactor: BigNumberish;
 };
 
 export type WorldConstantsStructOutput = [
   string,
+  BigNumber,
   BigNumber,
   BigNumber,
   BigNumber,
@@ -51,36 +53,33 @@ export type WorldConstantsStructOutput = [
   admin: string;
   worldWidth: BigNumber;
   worldHeight: BigNumber;
-  numPorts: BigNumber;
-  numCities: BigNumber;
   combatEfficiency: BigNumber;
   numInitTerrainTypes: BigNumber;
   initBatchSize: BigNumber;
-  initPlayerBalance: BigNumber;
-  defaultBaseGoldGenerationPerSecond: BigNumber;
+  initPlayerGoldBalance: BigNumber;
+  initPlayerOilBalance: BigNumber;
   maxBaseCountPerPlayer: BigNumber;
   maxTroopCountPerPlayer: BigNumber;
   maxPlayerCount: BigNumber;
+  defaultBaseGoldGenerationPerSecond: BigNumber;
+  defaultWellOilGenerationPerSecond: BigNumber;
+  debuffFactor: BigNumber;
 };
 
 export type TroopTypeStruct = {
   name: BigNumberish;
-  isLandTroop: boolean;
   maxHealth: BigNumberish;
   damagePerHit: BigNumberish;
   attackFactor: BigNumberish;
   defenseFactor: BigNumberish;
-  cargoCapacity: BigNumberish;
   movementCooldown: BigNumberish;
   largeActionCooldown: BigNumberish;
-  cost: BigNumberish;
-  expensePerSecond: BigNumberish;
+  goldPrice: BigNumberish;
+  oilConsumptionPerSecond: BigNumberish;
 };
 
 export type TroopTypeStructOutput = [
   number,
-  boolean,
-  BigNumber,
   BigNumber,
   BigNumber,
   BigNumber,
@@ -91,21 +90,19 @@ export type TroopTypeStructOutput = [
   BigNumber
 ] & {
   name: number;
-  isLandTroop: boolean;
   maxHealth: BigNumber;
   damagePerHit: BigNumber;
   attackFactor: BigNumber;
   defenseFactor: BigNumber;
-  cargoCapacity: BigNumber;
   movementCooldown: BigNumber;
   largeActionCooldown: BigNumber;
-  cost: BigNumber;
-  expensePerSecond: BigNumber;
+  goldPrice: BigNumber;
+  oilConsumptionPerSecond: BigNumber;
 };
 
 export interface DiamondInitInterface extends utils.Interface {
   functions: {
-    "init((address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256),(uint8,bool,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)[])": FunctionFragment;
+    "init((address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256),(uint8,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)[])": FunctionFragment;
   };
 
   encodeFunctionData(
